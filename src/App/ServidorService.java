@@ -3,22 +3,22 @@ package App;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import App.User.Status;
+
 public class ServidorService {
 
     private ServerSocket serverSocket;
     private Socket socket;
-
-    //todo usuario que se conectar ao servidor, √© add nessa lista
-    private Map<String, ObjectOutputStream> mapOnlines = new HashMap<String, ObjectOutputStream>();
+    
+    private Contacts contacts = new Contacts(); // lista de Usu·rios 
 
     public ServidorService() {
         try {
@@ -40,6 +40,8 @@ public class ServidorService {
 
         private ObjectOutputStream output;
         private ObjectInputStream input;
+        private InetAddress IPAddress;
+        private int port;
 
         //inicializa as vari√°veis atrav√©s do socket
         public ListenerSocket(Socket socket) {
@@ -47,6 +49,8 @@ public class ServidorService {
                 //exclusivo para cada cliente
                 this.output = new ObjectOutputStream(socket.getOutputStream());
                 this.input = new ObjectInputStream(socket.getInputStream());
+                this.IPAddress = socket.getInetAddress();
+                this.port = socket.getPort();
             } catch (IOException ex) {
                 Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -64,108 +68,102 @@ public class ServidorService {
                     Action action = message.getAction();
 
                     if (action.equals(Action.CONNECT)) {
-                        boolean isConnect = connect(message, output);
-                        if (isConnect) {
-                            mapOnlines.put(message.getName(), output);
-                            sendOnlines();
-                        }
+                    	connect(message, output);
+                   		ChatMessage newMessage = new ChatMessage();
+                   		newMessage.setAction(Action.NEW_USER_ONLINE);
+                   		message.setNewUserOnline(message.getName());
+                   		sendAllOnlines(message.getName(), newMessage);
                     } else if (action.equals(Action.DISCONNECT)) {
                         disconnect(message, output);
-                        sendOnlines();
+                        ChatMessage newMessage = new ChatMessage();
+                   		newMessage.setAction(Action.NEW_USER_OFFLINE);
+                   		message.setNewUserOffline(message.getName());
+                   		sendAllOnlines(message.getName(), newMessage);
                         return; //for√ßa a sa√≠da do while para n√£o cair no catch
 
                     } else if (action.equals(Action.SEND_ONE)) {
                         sendOne(message);
                     } else if (action.equals(Action.SEND_ALL)) {
-                        sendAll(message);
+                        sendAllOnlines(message.getName(), message);
                     }
                 }
             } catch (IOException ex) {
                 disconnect(message, output); //tmb desconecta quando aperta no bot√£o 'X' da janela
-                sendOnlines();
+                ChatMessage newMessage = new ChatMessage();
+           		newMessage.setAction(Action.NEW_USER_OFFLINE);
+           		message.setNewUserOffline(message.getName());
+           		sendAllOnlines(message.getName(), newMessage);
                 //System.out.println(message.getName() + " saiu"); //para debug
             } catch (ClassNotFoundException ex) {
                 Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
-        private boolean connect(ChatMessage message, ObjectOutputStream output) {
+        /**
+         * Add na lista de usu·rios do Servidor, atualiza infos do usu·rio e envia resposta de confirmaÁ„o p/ o cliente
+         * 
+         * @param message - RequisiÁ„o do cliente para se conectar
+         * @param output - Stream de dados de saÌda 
+         */
+        private void connect(ChatMessage message, ObjectOutputStream output) {
 
-            /*INICIO: evita usu√°rios com o mesmo nome ou username*/
-            if (mapOnlines.size() == 0) { //nenhum cliente se conectou ainda
-                message.setText("YES");
-                send(message, output);
-                return true;
-            }
-
-            //a lista j√° possui pelo menos um cliente conectado
-            for (Map.Entry<String, ObjectOutputStream> kv : mapOnlines.entrySet()) {
-                if (kv.getKey().equals(message.getName())) { //a chave do objeto √© o nome do cliente
-                    message.setText("NO");
-                    send(message, output);
-                    return false;
-                } else {
-                    message.setText("YES");
-                    send(message, output);
-                    return true;
-                }
-            }
-            /*FIM: evita usu√°rios com o mesmo nome ou username*/
-
-            return false;
-        }
-
-        private void disconnect(ChatMessage message, ObjectOutputStream output) {
-            mapOnlines.remove(message.getName());
-
-            message.setText("deixou o chat");
-
-            //envia mensagem informando que o usu√°rio desconectou-se
-            message.setAction(Action.SEND_ONE);
-            sendAll(message);
-
-            System.out.println(message.getName() + " desconectou-se"); //para debug
-        }
-
-        //mnda msg pra todo mundo da lista
-        private void sendAll(ChatMessage message) {
-            for (Map.Entry<String, ObjectOutputStream> kv : mapOnlines.entrySet()) {
-                //evita que uma msg seja enviada para o pr√≥prio cliente que est√° enviando a msg
-                if (!kv.getKey().equals(message.getName())) {
-                    message.setAction(Action.SEND_ONE);
-                    try {
-                        kv.getValue().writeObject(message);
-                    } catch (IOException ex) {
-                        Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            }
-        }
-
-        private void send(ChatMessage message, ObjectOutputStream output) {
+        	contacts.addContact(message.getName());
+        	contacts.getContact(message.getName()).setStatus(Status.ONLINE);
+        	contacts.getContact(message.getName()).setUserIP(IPAddress);
+        	contacts.getContact(message.getName()).setPort(port);
+        	contacts.addOnline(message.getName(), output);
+        	message.setText("YES");
             try {
                 //envia a menssagem
                 output.writeObject(message);
             } catch (IOException ex) {
                 Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            };
+        }
+
+        /**
+         * Atualiza status do usu·rio e envia resposta de confirmaÁ„o p/ cliente
+         * @param message - RequisiÁ„o do cliente para se desconectar
+         * @param output - Stream de dados de saÌda
+         */
+        private void disconnect(ChatMessage message, ObjectOutputStream output) {
+            contacts.getContact(message.getName()).setStatus(Status.OFFLINE);
+            contacts.removeOnline(message.getName());
+            
+            message.setText("deixou o chat");
+            try {
+                output.writeObject(message);
+            } catch (IOException ex) {
+                Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
+            };
+            
+            System.out.println(message.getName() + " desconectou-se"); //para debug
         }
 
         //msg reservada
         private void sendOne(ChatMessage message) {
-            for (Map.Entry<String, ObjectOutputStream> kv : mapOnlines.entrySet()) {
-                if (kv.getKey().equals(message.getNameReserved())) {
-                    try {
-                        //envia a menssagem
-                        kv.getValue().writeObject(message);
-                    } catch (IOException ex) {
-                        Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            }
+        	try {
+        		//envia a menssagem
+        		contacts.getMapOnlines().get(message.getNameReserved()).writeObject(message);
+        	} catch (IOException ex) {
+        		Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
+        	}
         }
-
-        private void sendOnlines() {
+         
+        
+        private void sendFriendList(String userID) {
+        	ChatMessage message = new ChatMessage();
+        	message.setFriendList(contacts.getContact(userID).getFriendList());
+        	message.setAction(Action.USERS_ONLINE);
+        	try {
+        		contacts.getMapOnlines().get(userID).writeObject(message);
+        	} catch (IOException ex) {
+        		Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
+        	}
+        	
+        	
+        }
+/*        private void sendOnlines() {
             Set<String> setNames = new HashSet<String>();
             for (Map.Entry<String, ObjectOutputStream> kv : mapOnlines.entrySet()) {
                 setNames.add(kv.getKey());
@@ -184,6 +182,27 @@ public class ServidorService {
                     Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
+            }
+        }*/
+        
+        /**
+         * envia mensagem para todos os amigos online
+         * @param userID
+         * @param message
+         */
+        private void sendAllOnlines(String userID, ChatMessage message) {
+        	   	
+            Set<String> friendsOnline = contacts.getContact(userID).getFriendsOnline();
+            
+            for (Map.Entry<String, ObjectOutputStream> kv : contacts.getMapOnlines().entrySet()) {
+            	if(friendsOnline.contains(kv.getKey())) {
+            		message.setName(userID);
+            		try {
+            			kv.getValue().writeObject(message);
+            		} catch (IOException ex) {
+            			Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
+            		}
+            	}
             }
         }
     }

@@ -8,10 +8,13 @@ package GUI;
 import App.Action;
 import App.ChatMessage;
 import App.ClienteService;
+import App.User;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -112,10 +115,16 @@ public class ClienteGUI extends javax.swing.JFrame {
 
     //Metodo para atualizar a lista de contatos
     private void refreshOnlines(ChatMessage message) {
-        System.out.println(message.getSetOnlines().toString()); //para debug
+       /* System.out.println(message.getSetOnlines().toString()); //para debug
         Set<String> names = message.getSetOnlines();
         names.remove((String) message.getName()); //retira o próprio nome da pessoa logada na lista
-        String[] array = (String[]) names.toArray(new String[names.size()]);
+        String[] array = (String[]) names.toArray(new String[names.size()]);*/
+    	Iterator<User> itFriendList = message.getUser().getFriendList().listIterator();
+    	String[] array = new String[message.getUser().getFriendList().size()];
+    	int indexArray = 0;
+    	while(itFriendList.hasNext()) {
+    		array[indexArray] = itFriendList.next().getUserID();
+    	}
         this.listOnlines.setListData(array);
         this.listOnlines.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         this.listOnlines.setLayoutOrientation(JList.VERTICAL); //nomes vão aparecer um debaixo do outro
