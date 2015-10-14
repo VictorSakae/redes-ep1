@@ -6,6 +6,11 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -19,7 +24,12 @@ public class ServidorService {
     private Socket socket;
     
     private Contacts contacts = new Contacts(); // lista de Usuários 
+    private Map<String, List<String>> friendsLists = new HashMap();
 
+    private List<String> getFriendList(String userID) {
+    	return friendsLists.get(userID);
+    }
+    
     public ServidorService() {
         try {
             serverSocket = new ServerSocket(5555); //inicializa o objeto na porta 5555
@@ -153,7 +163,13 @@ public class ServidorService {
         
         private void sendFriendList(String userID) {
         	ChatMessage message = new ChatMessage();
-        	message.setFriendList(contacts.getContact(userID).getFriendList());
+        	//message.setFriendList(contacts.getContact(userID).getFriendList());
+        	List<User> friendList = new ArrayList<User>();
+        	ListIterator<String> itFriendList = getFriendList(userID).listIterator();
+        	while(itFriendList.hasNext()) {
+        		friendList.add(contacts.getContact(itFriendList.next()));
+        	}
+        	message.setFriendList(friendList);
         	message.setAction(Action.USERS_ONLINE);
         	try {
         		contacts.getMapOnlines().get(userID).writeObject(message);
@@ -192,7 +208,15 @@ public class ServidorService {
          */
         private void sendAllOnlines(String userID, ChatMessage message) {
         	   	
-            Set<String> friendsOnline = contacts.getContact(userID).getFriendsOnline();
+            //Set<String> friendsOnline = contacts.getContact(userID).getFriendsOnline();
+        	Set<String> friendsOnline = new HashSet<String>();
+        	ListIterator<String> itFriendList = getFriendList(userID).listIterator();
+        	while(itFriendList.hasNext()) {
+        		User userFriendOnline = contacts.getContact(itFriendList.next());
+        		if(userFriendOnline.getStatus().equals(Status.ONLINE)) {
+        			friendsOnline.add(userFriendOnline.getUserID());
+        		}
+        	}
             
             for (Map.Entry<String, ObjectOutputStream> kv : contacts.getMapOnlines().entrySet()) {
             	if(friendsOnline.contains(kv.getKey())) {

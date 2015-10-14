@@ -12,13 +12,13 @@ public class User {
 	
 	private String userID;
 	private Status currentStatus;
-	private List<User> friendList;
+	//private List<User> friendList;
 	private InetAddress userIP;
 	private int port;
 
 	public User(String userID) {
 		this.userID = userID;
-		friendList = new ArrayList<User>();
+		//friendList = new ArrayList<User>();
 		currentStatus = Status.OFFLINE;
 	}
 	
@@ -30,7 +30,7 @@ public class User {
 		userID = iD;
 	}
 	
-	public List<User> getFriendList() {
+/*	public List<User> getFriendList() {
 		return friendList;
 	}
 	public void setFriendList(List<User> friendList) {
@@ -52,7 +52,7 @@ public class User {
 			}
 		}
 		return friendsOnline;
-	}
+	}*/
 	
 	public Status getStatus() {
 		return currentStatus;
