@@ -12,14 +12,14 @@ public class User {
 	
 	private String userID;
 	private Status currentStatus;
-	//private List<User> friendList;
 	private InetAddress userIP;
 	private int port;
 
 	public User(String userID) {
 		this.userID = userID;
-		//friendList = new ArrayList<User>();
 		currentStatus = Status.OFFLINE;
+		userIP = null;
+		port = -1;
 	}
 	
 	/*	GETs & SETs */
@@ -29,30 +29,6 @@ public class User {
 	public void setUserID(String iD) {
 		userID = iD;
 	}
-	
-/*	public List<User> getFriendList() {
-		return friendList;
-	}
-	public void setFriendList(List<User> friendList) {
-		this.friendList = friendList;
-	}
-	
-	private void addFriend(User newFriend) {
-		this.friendList.add(newFriend);
-	}
-	
-	public Set<String> getFriendsOnline() {
-		Set<String> friendsOnline = null;
-		User auxUser = null;
-		Iterator<User> itFriendList = getFriendList().listIterator();
-		while(itFriendList.hasNext()) {
-			auxUser = itFriendList.next();
-			if(auxUser.getStatus().equals(Status.ONLINE)) {
-				friendsOnline.add(auxUser.getUserID());
-			}
-		}
-		return friendsOnline;
-	}*/
 	
 	public Status getStatus() {
 		return currentStatus;

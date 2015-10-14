@@ -16,11 +16,7 @@ public class ChatMessage implements Serializable{
     private String nameReserved; //armazena nome do cliente do tipo msg reservada
 //    private Set<String> setOnlines = new HashSet<String>(); //armazena os contatos
     private User user;
-    private String newUserOnline;
-    private String newUserOffline;
     private List<User> friendList;
-    private String newFriendID;
-
 	
 	//para cada msg que o cliente enviar ao servidor ou quando o servidor tiver
     //que responder, vai dizer qual ação quer executar 
@@ -73,14 +69,6 @@ public class ChatMessage implements Serializable{
 	public void setUser(User user) {
 		this.user = user;
 	}
-
-	public void setNewUserOnline(String newUserOnline) {
-		this.newUserOnline = newUserOnline;
-	}
-	
-	public void setNewUserOffline(String newUserOffline) {
-		this.newUserOffline = newUserOffline;
-	}
 	
 	public List<User> getFriendList() {
 		return friendList;
@@ -89,17 +77,4 @@ public class ChatMessage implements Serializable{
 		this.friendList = friendList;
 	}
 	
-	/**
-	 * @return the newFriendID
-	 */
-	public String getNewFriendID() {
-		return newFriendID;
-	}
-
-	/**
-	 * @param newFriendID the newFriendID to set
-	 */
-	public void setNewFriendID(String newFriendID) {
-		this.newFriendID = newFriendID;
-	}
 }

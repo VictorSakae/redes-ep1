@@ -26,10 +26,6 @@ public class ServidorService {
     private Contacts contacts = new Contacts(); // lista de Usu�rios 
     private Map<String, List<String>> friendsLists = new HashMap();
 
-    private List<String> getFriendList(String userID) {
-    	return friendsLists.get(userID);
-    }
-    
     public ServidorService() {
         try {
             serverSocket = new ServerSocket(5555); //inicializa o objeto na porta 5555
@@ -79,54 +75,40 @@ public class ServidorService {
 
                     if (action.equals(Action.CONNECT)) {
                     	connect(message, output);
-                   		ChatMessage newMessage = new ChatMessage();
-                   		newMessage.setAction(Action.NEW_USER_ONLINE);
-                   		message.setNewUserOnline(message.getName());
-                   		sendAllOnlines(message.getName(), newMessage);
+                    	sendAllOnlines(message.getName(), Action.ALTER_STATUS);
                     } else if (action.equals(Action.DISCONNECT)) {
                         disconnect(message, output);
-                        ChatMessage newMessage = new ChatMessage();
-                   		newMessage.setAction(Action.NEW_USER_OFFLINE);
-                   		message.setNewUserOffline(message.getName());
-                   		sendAllOnlines(message.getName(), newMessage);
+                        sendAllOnlines(message.getName(), Action.ALTER_STATUS);
                         return; //força a saída do while para não cair no catch
 
                     } else if (action.equals(Action.SEND_ONE)) {
                         sendOne(message);
-                    } else if (action.equals(Action.SEND_ALL)) {
-                        sendAllOnlines(message.getName(), message);
                     } else if (action.equals(Action.NEW_FRIEND)) {
                     	ChatMessage newMessage = new ChatMessage();
                     	if(addFriend(message)){
                     		newMessage.setText("YES");
+                    		
+                    		/* Se NewFriend est� online, envia msg para ele */
+                        	if(contacts.isOnline(message.getName())) {
+                        		ChatMessage msgNewFriend = new ChatMessage();
+                        		msgNewFriend.setAction(Action.NEW_FRIEND);
+                        		msgNewFriend.setName(message.getName());
+                        		ObjectOutputStream outputNewFriend = contacts.getMapOnlines().get(message.getName()); 
+                        		send(msgNewFriend, outputNewFriend);
+                        	}
+                        	
                     	} else {
                     		newMessage.setText("NO");
                     	}
-                    	try {
-                			output.writeObject(newMessage);
-                		} catch (IOException ex){
-                			Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
-                		}
-                    	if(contacts.getMapOnlines().containsKey(message.getNewFriendID())) {
-                    		ChatMessage msgNewFriend = new ChatMessage();
-                    		msgNewFriend.setAction(Action.NEW_FRIEND);
-                    		msgNewFriend.setNewFriendID(message.getName());
-                    		try {
-                    			contacts.getMapOnlines().get(message.getNewFriendID()).writeObject(msgNewFriend);
-                    		} catch (IOException ex) {
-                    			Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
-                    		}
-                    	}
+                    	
+                    	send(newMessage, output); // resposta para o user 
                     } else if (action.equals(Action.FRIEND_LIST)) {
                     	sendFriendList(message.getName());
                     }
                 }
             } catch (IOException ex) {
                 disconnect(message, output); //tmb desconecta quando aperta no botão 'X' da janela
-                ChatMessage newMessage = new ChatMessage();
-           		newMessage.setAction(Action.NEW_USER_OFFLINE);
-           		message.setNewUserOffline(message.getName());
-           		sendAllOnlines(message.getName(), newMessage);
+                sendAllOnlines(message.getName(), Action.ALTER_STATUS);
                 //System.out.println(message.getName() + " saiu"); //para debug
             } catch (ClassNotFoundException ex) {
                 Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
@@ -142,10 +124,7 @@ public class ServidorService {
         private void connect(ChatMessage message, ObjectOutputStream output) {
 
         	contacts.addContact(message.getName());
-        	contacts.getContact(message.getName()).setStatus(Status.ONLINE);
-        	contacts.getContact(message.getName()).setUserIP(IPAddress);
-        	contacts.getContact(message.getName()).setPort(port);
-        	contacts.addOnline(message.getName(), output);
+        	contacts.addOnline(message.getName(), IPAddress, port, output);
         	message.setText("YES");
             try {
                 //envia a menssagem
@@ -184,12 +163,15 @@ public class ServidorService {
         	}
         }
          
-        
+        /**
+         * Envia a FriendList para o userID
+         * @param userID
+         */
         private void sendFriendList(String userID) {
         	ChatMessage message = new ChatMessage();
         	//message.setFriendList(contacts.getContact(userID).getFriendList());
         	List<User> friendList = new ArrayList<User>();
-        	ListIterator<String> itFriendList = getFriendList(userID).listIterator();
+        	ListIterator<String> itFriendList = friendsLists.get(userID).listIterator();
         	while(itFriendList.hasNext()) {
         		friendList.add(contacts.getContact(itFriendList.next()));
         	}
@@ -203,38 +185,26 @@ public class ServidorService {
         	
         	
         }
-/*        private void sendOnlines() {
-            Set<String> setNames = new HashSet<String>();
-            for (Map.Entry<String, ObjectOutputStream> kv : mapOnlines.entrySet()) {
-                setNames.add(kv.getKey());
+        
+        private void send(ChatMessage message, ObjectOutputStream output) {
+            try {
+                //envia a menssagem
+                output.writeObject(message);
+            } catch (IOException ex) {
+                Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
             }
-
-            ChatMessage message = new ChatMessage();
-            message.setAction(Action.USERS_ONLINE);
-            message.setSetOnlines(setNames);
-
-            //envia para todos os usuários a lista
-            for (Map.Entry<String, ObjectOutputStream> kv : mapOnlines.entrySet()) {
-                message.setName(kv.getKey());
-                try {
-                    kv.getValue().writeObject(message);
-                } catch (IOException ex) {
-                    Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
-                }
-
-            }
-        }*/
+        }
         
         /**
-         * envia mensagem para todos os amigos online
+         * Envia mensagem para todos os amigos online
          * @param userID
-         * @param message
+         * @param action
          */
-        private void sendAllOnlines(String userID, ChatMessage message) {
+        private void sendAllOnlines(String userID, Action action) {
         	   	
             //Set<String> friendsOnline = contacts.getContact(userID).getFriendsOnline();
         	Set<String> friendsOnline = new HashSet<String>();
-        	ListIterator<String> itFriendList = getFriendList(userID).listIterator();
+        	ListIterator<String> itFriendList = friendsLists.get(userID).listIterator();
         	while(itFriendList.hasNext()) {
         		User userFriendOnline = contacts.getContact(itFriendList.next());
         		if(userFriendOnline.getStatus().equals(Status.ONLINE)) {
@@ -242,6 +212,9 @@ public class ServidorService {
         		}
         	}
             
+        	ChatMessage message = new ChatMessage();
+        	message.setAction(action);
+        	
             for (Map.Entry<String, ObjectOutputStream> kv : contacts.getMapOnlines().entrySet()) {
             	if(friendsOnline.contains(kv.getKey())) {
             		message.setName(userID);
@@ -255,7 +228,7 @@ public class ServidorService {
         }
         
         private boolean addFriend(ChatMessage message) {
-        	String friendID = message.getNewFriendID();
+        	String friendID = message.getName();
         	User newFriend = contacts.getContact(friendID);
         	if(newFriend != null) {
         		List<String> friendList = friendsLists.get(message.getName());        		
