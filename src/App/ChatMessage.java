@@ -19,7 +19,9 @@ public class ChatMessage implements Serializable{
     private String newUserOnline;
     private String newUserOffline;
     private List<User> friendList;
+    private String newFriendID;
 
+	
 	//para cada msg que o cliente enviar ao servidor ou quando o servidor tiver
     //que responder, vai dizer qual ação quer executar 
     private Action action; 
@@ -85,5 +87,19 @@ public class ChatMessage implements Serializable{
 	}
 	public void setFriendList(List<User> friendList) {
 		this.friendList = friendList;
+	}
+	
+	/**
+	 * @return the newFriendID
+	 */
+	public String getNewFriendID() {
+		return newFriendID;
+	}
+
+	/**
+	 * @param newFriendID the newFriendID to set
+	 */
+	public void setNewFriendID(String newFriendID) {
+		this.newFriendID = newFriendID;
 	}
 }

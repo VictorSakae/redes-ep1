@@ -95,6 +95,30 @@ public class ServidorService {
                         sendOne(message);
                     } else if (action.equals(Action.SEND_ALL)) {
                         sendAllOnlines(message.getName(), message);
+                    } else if (action.equals(Action.NEW_FRIEND)) {
+                    	ChatMessage newMessage = new ChatMessage();
+                    	if(addFriend(message)){
+                    		newMessage.setText("YES");
+                    	} else {
+                    		newMessage.setText("NO");
+                    	}
+                    	try {
+                			output.writeObject(newMessage);
+                		} catch (IOException ex){
+                			Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
+                		}
+                    	if(contacts.getMapOnlines().containsKey(message.getNewFriendID())) {
+                    		ChatMessage msgNewFriend = new ChatMessage();
+                    		msgNewFriend.setAction(Action.NEW_FRIEND);
+                    		msgNewFriend.setNewFriendID(message.getName());
+                    		try {
+                    			contacts.getMapOnlines().get(message.getNewFriendID()).writeObject(msgNewFriend);
+                    		} catch (IOException ex) {
+                    			Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
+                    		}
+                    	}
+                    } else if (action.equals(Action.FRIEND_LIST)) {
+                    	sendFriendList(message.getName());
                     }
                 }
             } catch (IOException ex) {
@@ -228,6 +252,20 @@ public class ServidorService {
             		}
             	}
             }
+        }
+        
+        private boolean addFriend(ChatMessage message) {
+        	String friendID = message.getNewFriendID();
+        	User newFriend = contacts.getContact(friendID);
+        	if(newFriend != null) {
+        		List<String> friendList = friendsLists.get(message.getName());        		
+        		if(!friendList.contains(friendID)) {
+        			friendList.add(friendID);
+        			friendsLists.get(friendID).add(message.getName());
+        			return true;
+        		}
+        	}
+        	return false;
         }
     }
 }
