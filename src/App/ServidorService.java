@@ -80,6 +80,7 @@ public class ServidorService {
 				}
 			} catch (IOException ex) {
 				disconnect(message);
+				System.out.println(message.getName()+" saiu.");
 			} catch (ClassNotFoundException ex) {
 				Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
 			}
@@ -101,13 +102,14 @@ public class ServidorService {
 			
 			ChatMessage msgDisconnect = new ChatMessage();
 			msgDisconnect.setAction(Action.DISCONNECT);
+			msgDisconnect.setText("OK");
 			send(msgDisconnect);
-			System.out.println(userID + " desconectou-se"); //para debug
+			
+//			System.out.println(userID + " desconectou-se"); //para debug
 		}
 
 		private boolean addFriend(String userID, String friendID) {
 			List<String> userFriendList = new ArrayList<String>();
-			System.out.println("Friend: "+friendID);
 			if((contacts.getContact(friendID)) != null) {
 				if(friendsLists.containsKey(userID)) {
 					userFriendList = friendsLists.get(userID);
@@ -120,7 +122,6 @@ public class ServidorService {
 					userFriendList = new ArrayList<String>();
 					userFriendList.add(friendID);
 					friendsLists.put(userID, userFriendList);
-					System.out.println("put "+userID);
 					return true;	
 				}
 			}
@@ -139,7 +140,6 @@ public class ServidorService {
 	    public void send(ChatMessage message){
 	    	try {
 	    		output.writeObject(message);
-	    		System.out.println("Server enviou");
 	    	} catch (IOException ex) {
 	    		Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
 	    	}
@@ -148,10 +148,15 @@ public class ServidorService {
 		private void sendFriendList(ChatMessage message) {
 			List<User> friendList = new ArrayList<User>();
 			Iterator<String> itFriendList = friendsLists.get(message.getName()).listIterator();
+			System.out.println(message.getName()+" FriendList");
 			while(itFriendList.hasNext()) {
-				friendList.add(contacts.getContact(itFriendList.next()));
+				String friend = itFriendList.next();
+				System.out.println(friend);
+				friendList.add(contacts.getContact(friend));
 			}
 			ChatMessage msgFriendList = new ChatMessage();
+			msgFriendList.setName(message.getName());
+			msgFriendList.setAction(Action.FRIEND_LIST);
 			msgFriendList.setFriendList(friendList);
 			send(msgFriendList);
 		}

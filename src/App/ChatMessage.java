@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChatMessage implements Serializable {
+public class ChatMessage implements Serializable{
 
 	private String name;
 	private Action action; 

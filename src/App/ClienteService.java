@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -70,7 +71,14 @@ public class ClienteService {
     	}
     	
     	private void getFriendList(ChatMessage message) {
-    		clientContacts.setListUsers(message.getFriendList());
+    		List<User> friendList = message.getFriendList();
+    		if(friendList == null) {
+    			System.out.println("A LISTA CHEGOU NULL VÉI");
+    		} else if(friendList.isEmpty()) {
+    			System.out.println("A LISTA TÁ VAZIA VÉI");
+    		} else {
+    			clientContacts.setListUsers(message.getFriendList());
+    		}
     	}
     }
     
@@ -94,6 +102,7 @@ public class ClienteService {
     
     public void disconnectTo() {
     	ChatMessage msgDisconnect = new ChatMessage();
+    	msgDisconnect.setName(userID);
     	msgDisconnect.setAction(Action.DISCONNECT);
     	send(msgDisconnect);
     }
@@ -119,7 +128,7 @@ public class ClienteService {
     	ChatMessage msgFriendList = new ChatMessage();
     	msgFriendList.setName(userID);
     	msgFriendList.setAction(Action.FRIEND_LIST);
-    	send(msgFriendList);    	
+    	send(msgFriendList);
     }
     
     public void showFriendList() {

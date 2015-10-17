@@ -1,7 +1,6 @@
 package App;
 
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,7 +10,7 @@ import java.util.Map;
 
 import App.User.Status;
 
-public class Contacts implements Serializable {
+public class Contacts {
 
 	private List<User> listUsers = new LinkedList<User>();
 	private Map<String, ObjectOutputStream> mapOnlines = new HashMap<String, ObjectOutputStream>();
@@ -22,7 +21,7 @@ public class Contacts implements Serializable {
 	}
 
 	public void setListUsers(List<User> listUsers) {
-		this.listUsers = listUsers;
+		this.listUsers.addAll(listUsers);
 	}
 
 	
