@@ -63,7 +63,6 @@ public class ClienteService {
     				}
     			}
     		} catch (IOException ex) {
-    			System.out.println("IOException");
     			Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
             } catch (ClassNotFoundException ex) {
                 Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
@@ -72,13 +71,7 @@ public class ClienteService {
     	
     	private void getFriendList(ChatMessage message) {
     		List<User> friendList = message.getFriendList();
-    		if(friendList == null) {
-    			System.out.println("A LISTA CHEGOU NULL VÉI");
-    		} else if(friendList.isEmpty()) {
-    			System.out.println("A LISTA TÁ VAZIA VÉI");
-    		} else {
-    			clientContacts.setListUsers(message.getFriendList());
-    		}
+    		clientContacts.setListUsers(message.getFriendList());
     	}
     }
     
