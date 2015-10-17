@@ -6,103 +6,133 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import GUI.ClienteGUI;
 
 
 public class ClienteService {
     
-    private Socket socket;
-//    private ObjectOutputStream output;
-    private ServerSocket welcomeSocket;
+	private Socket socket;
+    private ObjectOutputStream outputServer;
+    private String userID;
+
     
     private Contacts clientContacts = new Contacts();
-    
-//     public Socket connect(){
-    public Socket connectTo(InetAddress ip, int port){
-        try {
-//            this.socketServer = new Socket("localhost", 5555);
-        	this.socket = new Socket(ip, port);
-//            this.output = new ObjectOutputStream(socket.getOutputStream());
-        } catch (IOException ex) {
-            Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return socket;
-    }
-    
-    public ClienteService() {
+  
+    public ClienteService(String userID) {
+    	this.userID = userID;
     	try {
-    		welcomeSocket = new ServerSocket(6666);
-    		System.out.println("Cliente ON");
-    		while(true) {
-    			socket = welcomeSocket.accept();
-    			
-    			new Thread(new ListenerSocket(socket)).start();
-    		}
-    	} catch (IOException ex) {
-    		Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
-    	}
-    	
+			InetAddress localhost = InetAddress.getLocalHost();
+
+			socket = connectTo(userID, localhost, 4545);
+		} catch (UnknownHostException unknownHostException) {
+			System.err.println(unknownHostException);
+		}
+
+        new Thread(new ListenerSocket(this.socket)).start();
     }
     
     private class ListenerSocket implements Runnable {
-    	private ObjectOutputStream output;
     	private ObjectInputStream input;
-    	private InetAddress ipAddress;
-    	private int port;
     	
     	public ListenerSocket(Socket socket) {
     		try {
-    			this.output = new ObjectOutputStream(socket.getOutputStream());
-    			this.input = new ObjectInputStream(socket.getInputStream());
-    			this.ipAddress = socket.getLocalAddress();
-    			this.port = socket.getPort();
+    			input = new ObjectInputStream(socket.getInputStream());
     		} catch (IOException ex) {
-    			Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
+            	Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
     		}
     	}
     	
     	public void run() {
     		ChatMessage message = null;
-    		
     		try {
-    			while((message = (ChatMessage) input.readObject()) != null) {
+    			while ((message = (ChatMessage) input.readObject()) != null) {
     				Action action = message.getAction();
-    				
-    				if(action.equals(Action.CONNECT)) {
-  					
-    				} else if(action.equals(Action.DISCONNECT)) {
-    					
-    				} else if(action.equals(Action.ALTER_STATUS)) {
-    					
-    				} else if(action.equals(Action.SEND_ONE)) {
-    					
-    				} else if(action.equals(Action.SEND_ALL)) {
-    					
-    				} else if(action.equals(Action.NEW_FRIEND)) {
-    					
-    				} else if(action.equals(Action.FRIEND_LIST)) {
-    					
+
+    				if (action.equals(Action.FRIEND_LIST)) {
+    					getFriendList(message);
+    					showFriendList();
+    				} else if (action.equals(Action.DISCONNECT)) {
+    					socket.close();
+    					return;
     				}
     			}
     		} catch (IOException ex) {
-                // disconnect
+    			System.out.println("IOException");
     			Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
-    		} catch (ClassNotFoundException ex) {
-    			Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
-    		}
+            } catch (ClassNotFoundException ex) {
+                Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
+            }
+    	}
+    	
+    	private void getFriendList(ChatMessage message) {
+    		clientContacts.setListUsers(message.getFriendList());
     	}
     }
     
-    public void send(ChatMessage message, ObjectOutputStream output){
+    public Socket connectTo(String userID, InetAddress ip, int port){
         try {
-            output.writeObject(message);
+        	this.socket = new Socket(ip, port);
+        	this.outputServer = new ObjectOutputStream(socket.getOutputStream());
+        	
+        	System.out.println("Connected to "+ip.toString()+":"+String.valueOf(port));
+			
+        	ChatMessage message = new ChatMessage();
+			message.setAction(Action.CONNECT);
+			message.setName(userID);
+			
+        	send(message);
         } catch (IOException ex) {
-            Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
+        	Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return socket;
     }
+    
+    public void disconnectTo() {
+    	ChatMessage msgDisconnect = new ChatMessage();
+    	msgDisconnect.setAction(Action.DISCONNECT);
+    	send(msgDisconnect);
+    }
+    
+    
+    public void send(ChatMessage message){
+    	try {
+    		outputServer.writeObject(message);
+    	} catch (IOException ex) {
+    		Logger.getLogger(ClienteService.class.getName()).log(Level.SEVERE, null, ex);
+    	}
+    }
+
+    public void addFriend(String newFriendID) {
+    	ChatMessage msgNewFriend = new ChatMessage();
+    	msgNewFriend.setName(userID);
+    	msgNewFriend.setAction(Action.NEW_FRIEND);
+    	msgNewFriend.setText(newFriendID);
+    	send(msgNewFriend);
+    }
+    
+    public void requestFriendList() {
+    	ChatMessage msgFriendList = new ChatMessage();
+    	msgFriendList.setName(userID);
+    	msgFriendList.setAction(Action.FRIEND_LIST);
+    	send(msgFriendList);    	
+    }
+    
+    public void showFriendList() {
+    	if (clientContacts.getListUsers().isEmpty()) {
+    		System.out.println("FriendList vazia");
+    	} else {
+    		System.out.println("FriendList:");
+    		Iterator<User> itFriendList = clientContacts.getListUsers().listIterator();
+    		while(itFriendList.hasNext()) {
+    			System.out.println(itFriendList.next().getUserID());
+    		}
+    	}
+
+    }
+    
 }

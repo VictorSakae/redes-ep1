@@ -1,35 +1,24 @@
 package App;
 
-
-
 import java.io.Serializable;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
+public class ChatMessage implements Serializable {
 
-/*O chat ao invés de mandar String, irá manda objetos ChatMessage*/
-public class ChatMessage implements Serializable{
-    
-    private String name;
-    private String text; //mensagem
-    private String nameReserved; //armazena nome do cliente do tipo msg reservada
-//    private Set<String> setOnlines = new HashSet<String>(); //armazena os contatos
-    private User user;
-    private List<User> friendList;
+	private String name;
+	private Action action; 
+	private String text;
+	private List<User> friendList = new ArrayList<User>();
+
+	public String getName() {
+		return name;
+	}
 	
-	//para cada msg que o cliente enviar ao servidor ou quando o servidor tiver
-    //que responder, vai dizer qual ação quer executar 
-    private Action action; 
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
+	public void setName(String name) {
+		this.name = name;
+	}
+	
     public String getText() {
         return text;
     }
@@ -37,44 +26,21 @@ public class ChatMessage implements Serializable{
     public void setText(String text) {
         this.text = text;
     }
-
-    public String getNameReserved() {
-        return nameReserved;
-    }
-
-    public void setNameReserved(String nameReserved) {
-        this.nameReserved = nameReserved;
-    }
-/*
-    public Set<String> getSetOnlines() {
-        return setOnlines;
-    }
-
-    public void setSetOnlines(Set<String> setOnlines) {
-        this.setOnlines = setOnlines;
-    }
-*/
-    public Action getAction() {
-        return action;
-    }
-
-    public void setAction(Action action) {
-        this.action = action;
-    }
-
-	public User getUser() {
-		return user;
+    
+	public Action getAction() {
+		return action;
 	}
 	
-	public void setUser(User user) {
-		this.user = user;
+	public void setAction(Action action) {
+		this.action = action;
 	}
-	
+
 	public List<User> getFriendList() {
 		return friendList;
 	}
+	
 	public void setFriendList(List<User> friendList) {
 		this.friendList = friendList;
 	}
-	
+
 }
