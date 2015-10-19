@@ -20,8 +20,7 @@ public class ServidorService {
 	private ServerSocket serverSocket;
 	private Socket socket;
 	private Contacts contacts = new Contacts();
-    private Map<String, List<String>> friendsLists = new HashMap();
-
+    private Map<String, List<String>> friendsLists = new HashMap<String, List<String>>();
 
 	public ServidorService() {
 		try {
@@ -65,12 +64,6 @@ public class ServidorService {
 					Action action = message.getAction();
 					if (action.equals(Action.CONNECT)) {
 						connect(message, output);
-					} else if (action.equals(Action.NEW_FRIEND)) {
-						if(addNewFriend(message)){
-							System.out.println(message.getText()+" foi adicionado");
-						} else {
-							System.out.println("Não foi possível adicionar");
-						}
 					} else if (action.equals(Action.FRIEND_LIST)) {
 						sendFriendList(message);
 					} else if (action.equals(Action.DISCONNECT)) {
@@ -108,36 +101,8 @@ public class ServidorService {
 //			System.out.println(userID + " desconectou-se"); //para debug
 		}
 
-		private boolean addFriend(String userID, String friendID) {
-			List<String> userFriendList = new ArrayList<String>();
-			if((contacts.getContact(friendID)) != null) {
-				if(friendsLists.containsKey(userID)) {
-					userFriendList = friendsLists.get(userID);
-					if(userFriendList.contains(friendID)) {
-						return false;
-					}
-					userFriendList.add(friendID);
-					return true;
-				} else {
-					userFriendList = new ArrayList<String>();
-					userFriendList.add(friendID);
-					friendsLists.put(userID, userFriendList);
-					return true;	
-				}
-			}
-			return false;
-		}
 		
-		private boolean addNewFriend(ChatMessage message) {
-			String userID = message.getName();
-			String friendID = message.getText();
-			if((addFriend(userID, friendID)) && (addFriend(friendID, userID))) {
-				return true;
-			}
-			return false;
-		}
-		
-	    public void send(ChatMessage message){
+	    private void send(ChatMessage message){
 	    	try {
 	    		output.writeObject(message);
 	    	} catch (IOException ex) {
