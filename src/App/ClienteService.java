@@ -24,11 +24,12 @@ public class ClienteService {
 	private final int portServer = 4545;
 	private String userID;
 	private Contacts clientContacts = new Contacts();
-	private Map<String, List<String>> friendsLists = new HashMap();
 
 	private ObjectOutputStream outputClient;
 	private int portClientServer;
-
+	
+	boolean friendListFlag = false;
+	
 	public ClienteService(String userID, int portClient) {
 		this.userID = userID;
 		this.portClientServer = portClient;
@@ -41,6 +42,7 @@ public class ClienteService {
 
 
 		public void run() {
+
 			try {
 				serverSocket = new ServerSocket(portClientServer);
 				System.out.println("ClienteServidor ON"); 
@@ -113,9 +115,8 @@ public class ClienteService {
 
 					if (action.equals(Action.FRIEND_LIST)) {
 						getFriendList(message);
-						showFriendList();
+//						showFriendList();
 					} else if (action.equals(Action.DISCONNECT)) {
-						//						socket.close();
 						socketServer.close();
 						return;
 					}
@@ -129,11 +130,12 @@ public class ClienteService {
 
 		private void getFriendList(ChatMessage message) {
 			clientContacts.setListUsers(message.getFriendList());
+			friendListFlag = true;
 		}
 
 		private void showFriendList() {
 			if (clientContacts.getListUsers().isEmpty()) {
-				System.out.println("FriendList vazia");
+				System.out.println("Nenhum contato na lista");
 			} else {
 				System.out.println("FriendList:");
 				Iterator<User> itFriendList = clientContacts.getListUsers().listIterator();
@@ -188,11 +190,13 @@ public class ClienteService {
 		ChatMessage message = new ChatMessage();
 		message.setAction(Action.CONNECT);
 		message.setName(userID);
+		message.setText(String.valueOf(portClientServer));
 
 		sendToServer(message);
 
 		new Thread(new ListenerSocketServer()).start();
-		new Thread(new ClientServer()).start();
+		new Thread(new ClientServer()).start();	
+
 	}
 	
 	public void disconnectFromServer() {
@@ -209,9 +213,18 @@ public class ClienteService {
 		sendToServer(msgFriendList);
 	}
 
-	public void sendTo(String id, InetAddress ipdest, int portdest, String text) {
-
-		socket = connectTo(ipdest, portdest);
+	public void sendTo(String id, String text) {
+		if(!friendListFlag) {
+			requestFriendList();
+			while(!friendListFlag) {
+				System.out.println("Wait...");
+			}
+		}
+		User userFriend = clientContacts.getContact(id);
+//		System.out.println("IP : " + userFriend.getUserIP().toString());
+//		System.out.println("Porta : " + String.valueOf(userFriend.getPort()));
+		
+		socket = connectTo(userFriend.getUserIP(), userFriend.getPort());
 		try {
 			outputClient = new ObjectOutputStream(socket.getOutputStream());
 		} catch (IOException ex) {

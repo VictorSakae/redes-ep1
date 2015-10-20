@@ -23,9 +23,25 @@ public class ServidorService {
     private Map<String, List<String>> friendsLists = new HashMap<String, List<String>>();
 
 	public ServidorService() {
+		
+		String cliente1 = "Cliente1";
+		String cliente2 = "Cliente2";
+		
+		contacts.addContact(cliente1);
+		contacts.addContact(cliente2);
+		
+		List<String> listUser1 = new ArrayList<String>();
+		listUser1.add(cliente2);
+		friendsLists.put(cliente1, listUser1);
+		
+		List<String> listUser2 = new ArrayList<String>();
+		listUser2.add(cliente1);
+		friendsLists.put(cliente2, listUser2);		
+		
 		try {
 			serverSocket = new ServerSocket(4545);
-			System.out.println("Servidor ON"); 
+			System.out.println("Servidor ON");
+			
 			while (true) { 
 				socket = serverSocket.accept();
 
@@ -41,14 +57,12 @@ public class ServidorService {
 		private ObjectOutputStream output;
 		private ObjectInputStream input;
 		private InetAddress IPAddress;
-		private int port;
 
 		public ListenerSocket(Socket socket) {
 			try {
 				this.output = new ObjectOutputStream(socket.getOutputStream());
 				this.input = new ObjectInputStream(socket.getInputStream());
 				this.IPAddress = socket.getInetAddress();
-				this.port = socket.getPort();
 			} catch (IOException ex) {
 				Logger.getLogger(ServidorService.class.getName()).log(Level.SEVERE, null, ex);
 			}
@@ -81,7 +95,7 @@ public class ServidorService {
 
 		private void connect(ChatMessage message, ObjectOutputStream output) {
 			String userID = message.getName();
-			
+			int port = Integer.parseInt(message.getText());
 			contacts.addContact(userID);
 			contacts.addOnline(userID, IPAddress, port, output);
 			System.out.println(userID+" se conectou");
@@ -113,10 +127,8 @@ public class ServidorService {
 		private void sendFriendList(ChatMessage message) {
 			List<User> friendList = new ArrayList<User>();
 			Iterator<String> itFriendList = friendsLists.get(message.getName()).listIterator();
-			System.out.println(message.getName()+" FriendList");
 			while(itFriendList.hasNext()) {
 				String friend = itFriendList.next();
-				System.out.println(friend);
 				friendList.add(contacts.getContact(friend));
 			}
 			ChatMessage msgFriendList = new ChatMessage();

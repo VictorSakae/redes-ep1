@@ -43,8 +43,11 @@ public class Contacts {
 		Iterator<User> itListContacts = listUsers.listIterator();
 		while(itListContacts.hasNext()) {
 			User element = itListContacts.next();
-			if(element.getUserID().equals(userID)) return element;
+			if(element.getUserID().equals(userID)) {
+				return element;
+			}
 		}
+		System.out.println("ERRO - Não foi possível localizar '" + userID + "'.");
 		return null;
 	}
 	
